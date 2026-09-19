@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/app.db*
+data/qdrant_local/
+data/qdrant_storage/
+data/ollama/
+data/policies/*
+!data/policies/.gitkeep
+logs/*.log*
+eval/reports/

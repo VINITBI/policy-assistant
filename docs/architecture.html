@@ -1,0 +1,502 @@
+<title>Policy Assistant Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F4F6F8; --surface:#FFFFFF; --group:#EAEEF2; --ink:#15202B; --ink2:#3A4754; --muted:#5E6B78; --line:#C3CCD6;
+  --ret:#0D7A74; --ret-bg:#E1F1EF; --ing:#9A6412; --ing-bg:#F6ECDB; --grd:#B03A32; --grd-bg:#F8E5E3;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E141A; --surface:#16202A; --group:#1B2631; --ink:#E5EBF1; --ink2:#B8C4CF; --muted:#8E9BA8; --line:#35434F;
+    --ret:#45BFB6; --ret-bg:#12302E; --ing:#E0A84A; --ing-bg:#33281A; --grd:#E97A70; --grd-bg:#3A1F1D;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E141A; --surface:#16202A; --group:#1B2631; --ink:#E5EBF1; --ink2:#B8C4CF; --muted:#8E9BA8; --line:#35434F;
+  --ret:#45BFB6; --ret-bg:#12302E; --ing:#E0A84A; --ing-bg:#33281A; --grd:#E97A70; --grd-bg:#3A1F1D;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:24px;padding-block:40px 64px}
+header{display:grid;gap:14px;max-width:820px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ret)}
+h1{font:700 clamp(34px,5vw,52px)/1.02 var(--display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.lede{font-size:18px;color:var(--ink2);margin:0;max-width:68ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0;margin-top:28px;border-block:1px solid var(--line)}
+.fact{padding:16px 18px 16px 0;display:grid;gap:2px}
+.fact + .fact{padding-left:18px;border-left:1px solid var(--line)}
+.fact b{font:600 17px/1.2 var(--display)}
+.fact span{color:var(--muted);font-size:13px}
+section{margin-top:56px;display:grid;gap:14px}
+h2{font:600 26px/1.15 var(--display);margin:0;text-wrap:balance}
+.intro{margin:0;color:var(--ink2);max-width:75ch}
+figure{margin:6px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.scroll{overflow-x:auto;padding:18px}
+figure svg{display:block;width:100%;height:auto}
+figure svg.w1{min-width:1100px}
+figure svg.w2{min-width:1150px}
+figcaption{padding:12px 18px 16px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+figcaption b{color:var(--ink2);font-weight:600}
+.key{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:8px}
+.key i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:6px;border:1.5px solid}
+.k-ret{background:var(--ret-bg);border-color:var(--ret)!important}
+.k-ing{background:var(--ing-bg);border-color:var(--ing)!important}
+.k-grd{background:var(--grd-bg);border-color:var(--grd)!important}
+.k-fb{background:transparent;border-style:dashed!important;border-color:var(--muted)!important}
+
+/* svg styling via page tokens */
+.bx{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.grp{fill:var(--group);stroke:var(--line);stroke-width:1}
+.ret{fill:var(--ret-bg);stroke:var(--ret);stroke-width:1.3}
+.ing{fill:var(--ing-bg);stroke:var(--ing);stroke-width:1.3}
+.grd{fill:var(--grd-bg);stroke:var(--grd);stroke-width:1.3}
+.fb{fill:var(--surface);stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4}
+.ok{fill:var(--ret-bg);stroke:var(--ret);stroke-width:1.6}
+.bnd{fill:none;stroke:var(--muted);stroke-width:1.3;stroke-dasharray:7 5}
+.ln{stroke:var(--ink2);stroke-width:1.4;fill:none}
+.lnd{stroke:var(--muted);stroke-width:1.3;fill:none;stroke-dasharray:4 4}
+.ah{fill:var(--ink2)}
+.ahm{fill:var(--muted)}
+.t{fill:var(--ink);font:600 13px var(--body)}
+.tl{fill:var(--ink);font:600 15px var(--display)}
+.s{fill:var(--muted);font:400 11px var(--mono)}
+.x{fill:var(--ink2);font:400 12px var(--body)}
+.lab{fill:var(--muted);font:500 10.5px var(--mono)}
+.h{fill:var(--muted);font:600 11px var(--mono);letter-spacing:.08em}
+.hr{fill:var(--ret);font:600 11px var(--mono);letter-spacing:.08em}
+.hi{fill:var(--ing);font:600 11px var(--mono);letter-spacing:.08em}
+.num{fill:var(--muted);font:500 10.5px var(--mono)}
+
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;border-top:2px solid var(--ink)}
+.controls > div{padding:18px 20px 18px 0}
+.controls > div + div{padding-left:20px;border-left:1px solid var(--line)}
+.controls h3{font:600 17px/1.2 var(--display);margin:0 0 8px}
+.controls ul{margin:0;padding-left:18px;display:grid;gap:6px;color:var(--ink2);font-size:14px}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--group)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+td code{font:500 12.5px var(--mono);color:var(--ret)}
+td:last-child{color:var(--ink2)}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px}
+.metrics h3{font:600 15px var(--display);margin:0 0 6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.metrics p{margin:0;color:var(--ink2);font-size:14px}
+.roadmap{margin:0;padding:0;list-style:none;display:grid;gap:0;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.roadmap li{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:16px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:14px}
+.roadmap li:last-child{border-bottom:0}
+.roadmap b{font-weight:600}
+.roadmap span{color:var(--ink2)}
+@media (max-width:640px){
+  .fact + .fact{padding-left:0;border-left:0;border-top:1px solid var(--line)}
+  .controls > div + div{padding-left:0;border-left:0;border-top:1px solid var(--line)}
+  .roadmap li{grid-template-columns:1fr;gap:2px}
+}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Architecture overview · Claims IT · Gen AI</div>
+  <h1>Policy Assistant</h1>
+  <p class="lede">A private AI assistant that answers employee questions from our company policy PDFs. Every answer cites the policy section and page it comes from, runs through safety checks, and is recorded in an audit trail. Every component runs on our own infrastructure.</p>
+</header>
+
+<div class="facts">
+  <div class="fact"><b>100% local, open source</b><span>No policy text or question leaves our network</span></div>
+  <div class="fact"><b>Two separate pipelines</b><span>Ingestion (admins) and retrieval (employees)</span></div>
+  <div class="fact"><b>Guardrails on both sides</b><span>Checks the question and verifies the answer</span></div>
+  <div class="fact"><b>Fully auditable</b><span>Every login, upload and question is traced</span></div>
+</div>
+
+<!-- ============ FIGURE 1: SYSTEM ============ -->
+<section>
+  <h2>System at a glance</h2>
+  <p class="intro">Employees and admins use one web app. What each person sees depends on their role. All requests pass through a single API that checks identity, routes the work to the right pipeline, and records what happened. The AI models and data stores sit behind the API and never face users directly.</p>
+  <figure>
+    <div class="scroll">
+    <svg class="w1" viewBox="0 0 1260 800" role="img" aria-label="System architecture: employees and admins use the Streamlit UI, which calls the FastAPI service. The API routes questions to the retrieval pipeline and uploads to the ingestion pipeline. Both pipelines use local models and Qdrant, and everything feeds the observability and audit layer, all inside the local deployment boundary.">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+        <marker id="a1m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahm"/></marker>
+      </defs>
+
+      <!-- boundary -->
+      <rect class="bnd" x="185" y="60" width="1060" height="732" rx="10"/>
+      <text class="h" x="200" y="50">LOCAL DEPLOYMENT BOUNDARY · NO CALLS TO EXTERNAL AI SERVICES</text>
+
+      <!-- people -->
+      <text class="h" x="20" y="150">PEOPLE</text>
+      <rect class="bx" x="20" y="170" width="140" height="70" rx="6"/>
+      <text class="t" x="90" y="200" text-anchor="middle">Employee</text>
+      <text class="s" x="90" y="220" text-anchor="middle">role: user</text>
+      <rect class="bx" x="20" y="480" width="140" height="70" rx="6"/>
+      <text class="t" x="90" y="510" text-anchor="middle">Administrator</text>
+      <text class="s" x="90" y="530" text-anchor="middle">role: admin</text>
+
+      <!-- UI -->
+      <text class="h" x="215" y="98">WEB APP · STREAMLIT</text>
+      <rect class="bx" x="215" y="110" width="165" height="190" rx="6"/>
+      <text class="t" x="229" y="134">User view</text>
+      <text class="x" x="229" y="162">Login</text>
+      <text class="x" x="229" y="184">Policy selector</text>
+      <text class="x" x="229" y="206">Chat box + history</text>
+      <text class="x" x="229" y="228">Sources &amp; confidence</text>
+      <text class="x" x="229" y="250">Feedback buttons</text>
+      <text class="s" x="229" y="284">:8501</text>
+
+      <rect class="bx" x="215" y="420" width="165" height="200" rx="6"/>
+      <text class="t" x="229" y="444">Admin view</text>
+      <text class="x" x="229" y="472">Upload policies</text>
+      <text class="x" x="229" y="494">Audit trail &amp; sessions</text>
+      <text class="x" x="229" y="516">Observability</text>
+      <text class="x" x="229" y="538">Evaluation runs</text>
+      <text class="x" x="229" y="560">User management</text>
+      <text class="s" x="229" y="604">same app, role-gated</text>
+
+      <!-- people -> UI -->
+      <line class="ln" x1="160" y1="205" x2="213" y2="205" marker-end="url(#a1)"/>
+      <text class="lab" x="186" y="197" text-anchor="middle">asks</text>
+      <line class="ln" x1="160" y1="515" x2="213" y2="515" marker-end="url(#a1)"/>
+      <text class="lab" x="186" y="507" text-anchor="middle">uses</text>
+
+      <!-- API -->
+      <text class="h" x="430" y="98">API SERVICE</text>
+      <rect class="grp" x="430" y="110" width="190" height="562" rx="8"/>
+      <text class="tl" x="445" y="134">FastAPI · :8000</text>
+      <rect class="bx" x="443" y="148" width="164" height="44" rx="5"/>
+      <text class="t" x="455" y="167">Trace middleware</text><text class="s" x="455" y="183">trace-id · metrics</text>
+      <rect class="bx" x="443" y="200" width="164" height="44" rx="5"/>
+      <text class="t" x="455" y="219">Auth &amp; RBAC</text><text class="s" x="455" y="235">JWT · lockout</text>
+      <rect class="bx" x="443" y="252" width="164" height="44" rx="5"/>
+      <text class="t" x="455" y="271">Chat API</text><text class="s" x="455" y="287">/chat/query</text>
+      <rect class="bx" x="443" y="304" width="164" height="44" rx="5"/>
+      <text class="t" x="455" y="323">Health &amp; readiness</text><text class="s" x="455" y="339">/health · /ready</text>
+      <rect class="bx" x="443" y="440" width="164" height="44" rx="5"/>
+      <text class="t" x="455" y="459">Policy API</text><text class="s" x="455" y="475">/admin/policies</text>
+      <rect class="bx" x="443" y="496" width="164" height="44" rx="5"/>
+      <text class="t" x="455" y="515">Admin API</text><text class="s" x="455" y="531">audit · traces · stats</text>
+      <rect class="bx" x="443" y="552" width="164" height="44" rx="5"/>
+      <text class="t" x="455" y="571">Error handler</text><text class="s" x="455" y="587">friendly msg + id</text>
+      <text class="s" x="445" y="628">Swagger UI at /docs</text>
+
+      <!-- UI -> API -->
+      <line class="ln" x1="380" y1="222" x2="441" y2="222" marker-end="url(#a1)"/>
+      <text class="lab" x="411" y="214" text-anchor="middle">login</text>
+      <line class="ln" x1="380" y1="274" x2="441" y2="274" marker-end="url(#a1)"/>
+      <text class="lab" x="411" y="266" text-anchor="middle">REST+JWT</text>
+      <line class="ln" x1="380" y1="462" x2="441" y2="462" marker-end="url(#a1)"/>
+      <text class="lab" x="411" y="454" text-anchor="middle">PDF</text>
+      <line class="ln" x1="380" y1="518" x2="441" y2="518" marker-end="url(#a1)"/>
+      <text class="lab" x="411" y="510" text-anchor="middle">reports</text>
+
+      <!-- retrieval pipeline -->
+      <text class="hr" x="670" y="98">RETRIEVAL PIPELINE · PER QUESTION</text>
+      <rect class="grp" x="670" y="110" width="290" height="300" rx="8"/>
+      <rect class="grd" x="684" y="124" width="262" height="28" rx="4"/><text class="x" x="696" y="143">Input guard: injection · abuse · PII</text>
+      <rect class="ret" x="684" y="158" width="262" height="28" rx="4"/><text class="x" x="696" y="177">Chat memory + follow-up rewrite</text>
+      <rect class="ret" x="684" y="192" width="262" height="28" rx="4"/><text class="x" x="696" y="211">Multi-query + acronym expansion</text>
+      <rect class="ret" x="684" y="226" width="262" height="28" rx="4"/><text class="x" x="696" y="245">Hybrid search: dense + BM25 (RRF)</text>
+      <rect class="ret" x="684" y="260" width="262" height="28" rx="4"/><text class="x" x="696" y="279">Rerank + relevance gate</text>
+      <rect class="ret" x="684" y="294" width="262" height="28" rx="4"/><text class="x" x="696" y="313">Small-to-big context, [S#] tags</text>
+      <rect class="ret" x="684" y="328" width="262" height="28" rx="4"/><text class="x" x="696" y="347">LLM answer with citations</text>
+      <rect class="grd" x="684" y="362" width="262" height="28" rx="4"/><text class="x" x="696" y="381">Sanitize + output guardrails</text>
+
+      <!-- ingestion pipeline -->
+      <text class="hi" x="670" y="432">INGESTION PIPELINE · BACKGROUND JOB</text>
+      <rect class="grp" x="670" y="440" width="290" height="232" rx="8"/>
+      <rect class="ing" x="684" y="454" width="262" height="26" rx="4"/><text class="x" x="696" y="472">Validate · de-duplicate (sha256)</text>
+      <rect class="ing" x="684" y="488" width="262" height="26" rx="4"/><text class="x" x="696" y="506">Parse layout + tables (PyMuPDF)</text>
+      <rect class="ing" x="684" y="522" width="262" height="26" rx="4"/><text class="x" x="696" y="540">Clean headers/footers · sections</text>
+      <rect class="ing" x="684" y="556" width="262" height="26" rx="4"/><text class="x" x="696" y="574">Parent / child chunking</text>
+      <rect class="ing" x="684" y="590" width="262" height="26" rx="4"/><text class="x" x="696" y="608">Embed: bge dense + BM25 sparse</text>
+      <rect class="ing" x="684" y="624" width="262" height="26" rx="4"/><text class="x" x="696" y="642">Upsert to Qdrant + metadata</text>
+
+      <!-- API -> pipelines -->
+      <path class="ln" d="M607,274 H640 V138 H682" marker-end="url(#a1)"/>
+      <text class="lab" x="633" y="210" transform="rotate(-90 633 210)" text-anchor="middle">question</text>
+      <path class="lnd" d="M684,376 H652 V286 H609" marker-end="url(#a1m)"/>
+      <text class="lab" x="662" y="336" transform="rotate(-90 662 336)" text-anchor="middle">answer</text>
+      <line class="ln" x1="607" y1="462" x2="668" y2="462" marker-end="url(#a1)"/>
+      <text class="lab" x="638" y="454" text-anchor="middle">queue</text>
+
+      <!-- models -->
+      <text class="h" x="1040" y="98">LOCAL MODELS</text>
+      <rect class="grp" x="1040" y="110" width="190" height="244" rx="8"/>
+      <rect class="bx" x="1052" y="124" width="166" height="48" rx="5"/>
+      <text class="t" x="1064" y="144">Ollama LLM</text><text class="s" x="1064" y="161">llama3.1:8b → qwen2.5</text>
+      <rect class="bx" x="1052" y="180" width="166" height="48" rx="5"/>
+      <text class="t" x="1064" y="200">Embedding model</text><text class="s" x="1064" y="217">bge-base-en-v1.5</text>
+      <rect class="bx" x="1052" y="236" width="166" height="48" rx="5"/>
+      <text class="t" x="1064" y="256">Reranker</text><text class="s" x="1064" y="273">bge-reranker-v2-m3</text>
+      <rect class="bx" x="1052" y="292" width="166" height="48" rx="5"/>
+      <text class="t" x="1064" y="312">Injection check</text><text class="s" x="1064" y="329">DeBERTa-v3 classifier</text>
+
+      <!-- data -->
+      <text class="h" x="1040" y="392">DATA STORES</text>
+      <rect class="grp" x="1040" y="400" width="190" height="272" rx="8"/>
+      <rect class="bx" x="1052" y="434" width="166" height="48" rx="5"/>
+      <text class="t" x="1064" y="454">Qdrant</text><text class="s" x="1064" y="471">vectors + metadata</text>
+      <rect class="bx" x="1052" y="490" width="166" height="48" rx="5"/>
+      <text class="t" x="1064" y="510">SQLite</text><text class="s" x="1064" y="527">users · chats · audit</text>
+      <rect class="bx" x="1052" y="546" width="166" height="48" rx="5"/>
+      <text class="t" x="1064" y="566">File store</text><text class="s" x="1064" y="583">original policy PDFs</text>
+      <rect class="bx" x="1052" y="602" width="166" height="48" rx="5"/>
+      <text class="t" x="1064" y="622">prompts.yaml</text><text class="s" x="1064" y="639">versioned prompts</text>
+
+      <!-- pipelines -> models/data -->
+      <line class="ln" x1="960" y1="204" x2="1050" y2="204" marker-end="url(#a1)"/>
+      <text class="lab" x="1005" y="196" text-anchor="middle">model calls</text>
+      <path class="ln" d="M960,398 H1000 V452 H1050" marker-end="url(#a1)"/>
+      <text class="lab" x="966" y="392">search</text>
+      <path class="ln" d="M960,603 H1022 V468 H1050" marker-end="url(#a1)"/>
+      <text class="lab" x="968" y="596">upsert</text>
+
+      <!-- observability -->
+      <rect class="grp" x="215" y="700" width="1015" height="80" rx="8"/>
+      <text class="h" x="231" y="720">OBSERVABILITY &amp; GOVERNANCE</text>
+      <rect class="bx" x="231" y="732" width="188" height="34" rx="5"/><text class="x" x="325" y="754" text-anchor="middle">JSON logs · app/error/audit</text>
+      <rect class="bx" x="431" y="732" width="188" height="34" rx="5"/><text class="x" x="525" y="754" text-anchor="middle">Audit trail · who/what/when</text>
+      <rect class="bx" x="631" y="732" width="188" height="34" rx="5"/><text class="x" x="725" y="754" text-anchor="middle">Request traces per step</text>
+      <rect class="bx" x="831" y="732" width="188" height="34" rx="5"/><text class="x" x="925" y="754" text-anchor="middle">Prometheus /metrics</text>
+      <rect class="bx" x="1031" y="732" width="188" height="34" rx="5"/><text class="x" x="1125" y="754" text-anchor="middle">DeepEval + self-eval</text>
+      <line class="ln" x1="525" y1="672" x2="525" y2="730" marker-end="url(#a1)"/>
+      <text class="lab" x="533" y="690">logs · audit</text>
+      <line class="ln" x1="815" y1="672" x2="815" y2="730" marker-end="url(#a1)"/>
+      <text class="lab" x="823" y="690">step timings</text>
+      <line class="ln" x1="1135" y1="672" x2="1135" y2="730" marker-end="url(#a1)"/>
+      <text class="lab" x="1143" y="690">in SQLite</text>
+    </svg>
+    </div>
+    <figcaption><b>Figure 1.</b> Users only talk to the web app, and the web app only talks to the API. Questions go through the retrieval pipeline and uploads through the ingestion pipeline. Both use the same local models and vector database, and every step feeds the observability and audit layer.
+      <div class="key"><span><i class="k-grd"></i>guardrail step</span><span><i class="k-ret"></i>retrieval step</span><span><i class="k-ing"></i>ingestion step</span><span><i class="k-fb"></i>dashed = response / fallback path</span></div>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============ FIGURE 2: QUESTION LIFECYCLE ============ -->
+<section>
+  <h2>What happens when an employee asks a question</h2>
+  <p class="intro">Nine steps run in order and each one is timed and recorded. Where a step can fail, there is a planned fallback, shown below the main row. The employee always gets a clear message instead of an error screen or an invented answer.</p>
+  <figure>
+    <div class="scroll">
+    <svg class="w2" viewBox="0 0 1320 340" role="img" aria-label="Question lifecycle: nine steps from input guardrails to delivery, each with a fallback path when it fails or is blocked.">
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+        <marker id="a2m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahm"/></marker>
+      </defs>
+      <text class="h" x="20" y="30">ONE REQUEST TRACE · EVERY STEP IS A TIMED SPAN WITH THE SAME TRACE ID</text>
+      <line class="lnd" x1="84" y1="52" x2="1236" y2="52"/>
+      <g class="s">
+        <circle cx="84" cy="52" r="3" class="ah"/><circle cx="228" cy="52" r="3" class="ah"/><circle cx="372" cy="52" r="3" class="ah"/>
+        <circle cx="516" cy="52" r="3" class="ah"/><circle cx="660" cy="52" r="3" class="ah"/><circle cx="804" cy="52" r="3" class="ah"/>
+        <circle cx="948" cy="52" r="3" class="ah"/><circle cx="1092" cy="52" r="3" class="ah"/><circle cx="1236" cy="52" r="3" class="ah"/>
+      </g>
+
+      <!-- steps -->
+      <rect class="grd" x="20" y="76" width="128" height="92" rx="6"/>
+      <text class="num" x="32" y="96">STEP 1</text><text class="t" x="32" y="118">Guard input</text><text class="s" x="32" y="138">injection · abuse</text><text class="s" x="32" y="154">PII masking</text>
+      <rect class="ret" x="164" y="76" width="128" height="92" rx="6"/>
+      <text class="num" x="176" y="96">STEP 2</text><text class="t" x="176" y="118">Recall memory</text><text class="s" x="176" y="138">last 6 turns</text><text class="s" x="176" y="154">of this chat</text>
+      <rect class="ret" x="308" y="76" width="128" height="92" rx="6"/>
+      <text class="num" x="320" y="96">STEP 3</text><text class="t" x="320" y="118">Optimize query</text><text class="s" x="320" y="138">rewrite · expand</text><text class="s" x="320" y="154">acronyms (WFH…)</text>
+      <rect class="ret" x="452" y="76" width="128" height="92" rx="6"/>
+      <text class="num" x="464" y="96">STEP 4</text><text class="t" x="464" y="118">Hybrid search</text><text class="s" x="464" y="138">dense + BM25</text><text class="s" x="464" y="154">fused by RRF</text>
+      <rect class="ret" x="596" y="76" width="128" height="92" rx="6"/>
+      <text class="num" x="608" y="96">STEP 5</text><text class="t" x="608" y="118">Rerank</text><text class="s" x="608" y="138">cross-encoder</text><text class="s" x="608" y="154">top 20 → top 5</text>
+      <rect class="ret" x="740" y="76" width="128" height="92" rx="6"/>
+      <text class="num" x="752" y="96">STEP 6</text><text class="t" x="752" y="118">Build context</text><text class="s" x="752" y="138">parent sections</text><text class="s" x="752" y="154">tagged [S1] [S2]</text>
+      <rect class="ret" x="884" y="76" width="128" height="92" rx="6"/>
+      <text class="num" x="896" y="96">STEP 7</text><text class="t" x="896" y="118">Generate</text><text class="s" x="896" y="138">local LLM</text><text class="s" x="896" y="154">cite or refuse</text>
+      <rect class="grd" x="1028" y="76" width="128" height="92" rx="6"/>
+      <text class="num" x="1040" y="96">STEP 8</text><text class="t" x="1040" y="118">Guard output</text><text class="s" x="1040" y="138">grounding · PII</text><text class="s" x="1040" y="154">prompt-leak check</text>
+      <rect class="ret" x="1172" y="76" width="128" height="92" rx="6"/>
+      <text class="num" x="1184" y="96">STEP 9</text><text class="t" x="1184" y="118">Deliver, record</text><text class="s" x="1184" y="138">save · audit</text><text class="s" x="1184" y="154">self-evaluate</text>
+
+      <!-- step arrows -->
+      <line class="ln" x1="148" y1="122" x2="162" y2="122" marker-end="url(#a2)"/>
+      <line class="ln" x1="292" y1="122" x2="306" y2="122" marker-end="url(#a2)"/>
+      <line class="ln" x1="436" y1="122" x2="450" y2="122" marker-end="url(#a2)"/>
+      <line class="ln" x1="580" y1="122" x2="594" y2="122" marker-end="url(#a2)"/>
+      <line class="ln" x1="724" y1="122" x2="738" y2="122" marker-end="url(#a2)"/>
+      <line class="ln" x1="868" y1="122" x2="882" y2="122" marker-end="url(#a2)"/>
+      <line class="ln" x1="1012" y1="122" x2="1026" y2="122" marker-end="url(#a2)"/>
+      <line class="ln" x1="1156" y1="122" x2="1170" y2="122" marker-end="url(#a2)"/>
+
+      <!-- fallbacks -->
+      <line class="lnd" x1="84" y1="168" x2="84" y2="234" marker-end="url(#a2m)"/><text class="lab" x="90" y="206">blocked</text>
+      <rect class="fb" x="20" y="236" width="128" height="72" rx="6"/>
+      <text class="t" x="32" y="258">Stop politely</text><text class="s" x="32" y="278">reason shown,</text><text class="s" x="32" y="294">event audited</text>
+
+      <line class="lnd" x1="372" y1="168" x2="372" y2="234" marker-end="url(#a2m)"/><text class="lab" x="378" y="206">fails</text>
+      <rect class="fb" x="308" y="236" width="128" height="72" rx="6"/>
+      <text class="t" x="320" y="258">Use original</text><text class="s" x="320" y="278">question as-is,</text><text class="s" x="320" y="294">keep going</text>
+
+      <line class="lnd" x1="516" y1="168" x2="516" y2="234" marker-end="url(#a2m)"/><text class="lab" x="522" y="206">DB down</text>
+      <rect class="fb" x="452" y="236" width="128" height="72" rx="6"/>
+      <text class="t" x="464" y="258">Retry later</text><text class="s" x="464" y="278">friendly message</text><text class="s" x="464" y="294">with trace id</text>
+
+      <line class="lnd" x1="660" y1="168" x2="660" y2="234" marker-end="url(#a2m)"/><text class="lab" x="666" y="206">no match</text>
+      <rect class="fb" x="596" y="236" width="128" height="72" rx="6"/>
+      <text class="t" x="608" y="258">Not in policy</text><text class="s" x="608" y="278">no LLM call,</text><text class="s" x="608" y="294">suggest HR</text>
+
+      <line class="lnd" x1="948" y1="168" x2="948" y2="234" marker-end="url(#a2m)"/><text class="lab" x="954" y="206">LLM down</text>
+      <rect class="fb" x="884" y="236" width="128" height="72" rx="6"/>
+      <text class="t" x="896" y="258">Backup model</text><text class="s" x="896" y="278">then show raw</text><text class="s" x="896" y="294">policy passages</text>
+
+      <line class="lnd" x1="1092" y1="168" x2="1092" y2="234" marker-end="url(#a2m)"/><text class="lab" x="1098" y="206">unsupported</text>
+      <rect class="fb" x="1028" y="236" width="128" height="72" rx="6"/>
+      <text class="t" x="1040" y="258">Withhold answer</text><text class="s" x="1040" y="278">safe message</text><text class="s" x="1040" y="294">shown instead</text>
+
+      <line class="ln" x1="1236" y1="168" x2="1236" y2="234" marker-end="url(#a2)"/><text class="lab" x="1242" y="206">success</text>
+      <rect class="ok" x="1172" y="236" width="128" height="72" rx="6"/>
+      <text class="t" x="1184" y="258">Answer shown</text><text class="s" x="1184" y="278">sources + pages</text><text class="s" x="1184" y="294">confidence badge</text>
+    </svg>
+    </div>
+    <figcaption><b>Figure 2.</b> The relevance gate at step 5 is the main defense against hallucination. If no policy passage scores high enough, the assistant says the answer isn't in the policy and never asks the LLM. Step 8 then checks that each sentence of a generated answer is supported by the retrieved text before it is shown.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ FIGURE 3: INGESTION ============ -->
+<section>
+  <h2>How a policy PDF becomes searchable</h2>
+  <p class="intro">When an admin uploads a PDF, a background job processes it: the admin gets an immediate response and can watch the job's status. The chunking follows the policy's own structure (sections, sub-sections, tables), so answers can point to the exact section and page.</p>
+  <figure>
+    <div class="scroll">
+    <svg class="w2" viewBox="0 0 1320 330" role="img" aria-label="Ingestion flow in six steps: validate, parse, clean, chunk, embed and index. Below it, the parent/child chunk structure and the metadata each chunk carries.">
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+      </defs>
+      <rect class="ing" x="17" y="30" width="196" height="84" rx="6"/>
+      <text class="t" x="31" y="56">Validate</text><text class="s" x="31" y="78">PDF only · ≤ 25 MB</text><text class="s" x="31" y="96">sha256 duplicate check</text>
+      <rect class="ing" x="235" y="30" width="196" height="84" rx="6"/>
+      <text class="t" x="249" y="56">Parse layout</text><text class="s" x="249" y="78">headings from fonts,</text><text class="s" x="249" y="96">tables, page numbers</text>
+      <rect class="ing" x="453" y="30" width="196" height="84" rx="6"/>
+      <text class="t" x="467" y="56">Clean</text><text class="s" x="467" y="78">drop headers/footers</text><text class="s" x="467" y="96">fix hyphens, unicode</text>
+      <rect class="ing" x="671" y="30" width="196" height="84" rx="6"/>
+      <text class="t" x="685" y="56">Chunk</text><text class="s" x="685" y="78">parent ≈1200 tokens</text><text class="s" x="685" y="96">child ≈350, 60 overlap</text>
+      <rect class="ing" x="889" y="30" width="196" height="84" rx="6"/>
+      <text class="t" x="903" y="56">Embed</text><text class="s" x="903" y="78">bge 768-d dense</text><text class="s" x="903" y="96">+ BM25 sparse terms</text>
+      <rect class="ing" x="1107" y="30" width="196" height="84" rx="6"/>
+      <text class="t" x="1121" y="56">Index</text><text class="s" x="1121" y="78">Qdrant HNSW + int8</text><text class="s" x="1121" y="96">24 metadata fields</text>
+      <line class="ln" x1="213" y1="72" x2="233" y2="72" marker-end="url(#a3)"/>
+      <line class="ln" x1="431" y1="72" x2="451" y2="72" marker-end="url(#a3)"/>
+      <line class="ln" x1="649" y1="72" x2="669" y2="72" marker-end="url(#a3)"/>
+      <line class="ln" x1="867" y1="72" x2="887" y2="72" marker-end="url(#a3)"/>
+      <line class="ln" x1="1085" y1="72" x2="1105" y2="72" marker-end="url(#a3)"/>
+
+      <!-- chunk anatomy -->
+      <rect class="grp" x="17" y="146" width="680" height="174" rx="8"/>
+      <text class="h" x="33" y="168">SECTION · 2. ANNUAL LEAVE › 2.1 CARRY FORWARD</text>
+      <rect class="ing" x="37" y="182" width="640" height="122" rx="6"/>
+      <text class="t" x="53" y="204">Parent chunk ≈1200 tokens: what the LLM reads</text>
+      <rect class="bx" x="57" y="218" width="165" height="52" rx="4" style="stroke:var(--ing)" opacity=".92"/>
+      <rect class="bx" x="207" y="218" width="165" height="52" rx="4" style="stroke:var(--ing)" opacity=".92"/>
+      <rect class="bx" x="357" y="218" width="165" height="52" rx="4" style="stroke:var(--ing)" opacity=".92"/>
+      <rect class="bx" x="507" y="218" width="165" height="52" rx="4" style="stroke:var(--ing)" opacity=".92"/>
+      <text class="x" x="132" y="240" text-anchor="middle">child 1</text><text class="s" x="132" y="258" text-anchor="middle">≈350 tokens</text>
+      <text class="x" x="282" y="240" text-anchor="middle">child 2</text><text class="s" x="282" y="258" text-anchor="middle">≈350 tokens</text>
+      <text class="x" x="432" y="240" text-anchor="middle">child 3</text><text class="s" x="432" y="258" text-anchor="middle">≈350 tokens</text>
+      <text class="x" x="582" y="240" text-anchor="middle">child 4</text><text class="s" x="582" y="258" text-anchor="middle">≈350 tokens</text>
+      <text class="s" x="53" y="292">children are searched (they overlap by 60 tokens); a matching child brings its whole parent</text>
+
+      <text class="h" x="740" y="168">EVERY CHUNK CARRIES</text>
+      <g>
+        <rect class="bx" x="740" y="182" width="178" height="28" rx="14"/><text class="x" x="829" y="200" text-anchor="middle">policy name + id</text>
+        <rect class="bx" x="932" y="182" width="178" height="28" rx="14"/><text class="x" x="1021" y="200" text-anchor="middle">version</text>
+        <rect class="bx" x="1124" y="182" width="178" height="28" rx="14"/><text class="x" x="1213" y="200" text-anchor="middle">department</text>
+        <rect class="bx" x="740" y="216" width="178" height="28" rx="14"/><text class="x" x="829" y="234" text-anchor="middle">effective date</text>
+        <rect class="bx" x="932" y="216" width="178" height="28" rx="14"/><text class="x" x="1021" y="234" text-anchor="middle">tags</text>
+        <rect class="bx" x="1124" y="216" width="178" height="28" rx="14"/><text class="x" x="1213" y="234" text-anchor="middle">section path</text>
+        <rect class="bx" x="740" y="250" width="178" height="28" rx="14"/><text class="x" x="829" y="268" text-anchor="middle">page range</text>
+        <rect class="bx" x="932" y="250" width="178" height="28" rx="14"/><text class="x" x="1021" y="268" text-anchor="middle">parent id + text</text>
+        <rect class="bx" x="1124" y="250" width="178" height="28" rx="14"/><text class="x" x="1213" y="268" text-anchor="middle">source file + hash</text>
+        <rect class="bx" x="740" y="284" width="178" height="28" rx="14"/><text class="x" x="829" y="302" text-anchor="middle">token count</text>
+        <rect class="bx" x="932" y="284" width="178" height="28" rx="14"/><text class="x" x="1021" y="302" text-anchor="middle">ingested by / at</text>
+        <rect class="bx" x="1124" y="284" width="178" height="28" rx="14"/><text class="x" x="1213" y="302" text-anchor="middle">embedding model</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption><b>Figure 3.</b> Small chunks give precise search matches, and the larger parent section gives the LLM enough context to answer completely ("small-to-big" retrieval). Uploading a new version of a policy replaces the old one automatically. If a job fails, its partial index is rolled back and the admin sees why.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ CONTROLS ============ -->
+<section>
+  <h2>Controls leadership should know about</h2>
+  <div class="controls">
+    <div><h3>Access</h3><ul>
+      <li>Sign-in with user ID and password (hashed with bcrypt)</li>
+      <li>Two roles. Employees cannot upload policies; the server enforces this, not just the screen.</li>
+      <li>An account locks for 15 minutes after 5 failed attempts</li>
+      <li>Sessions expire after 60 minutes, and logging out revokes them on the server</li></ul></div>
+    <div><h3>Answer quality</h3><ul>
+      <li>Answers come only from policy text and cite the section and page</li>
+      <li>The relevance gate refuses when nothing in the policy matches</li>
+      <li>Answers not supported by the policy text are withheld</li>
+      <li>Numbers that don't appear in the policy are flagged to the user</li></ul></div>
+    <div><h3>Data protection</h3><ul>
+      <li>All models run locally, so no data goes to external AI providers</li>
+      <li>Personal data in questions is masked before processing</li>
+      <li>High-risk identifiers are redacted from answers</li>
+      <li>Prompt-injection attempts are blocked and logged</li></ul></div>
+    <div><h3>Accountability</h3><ul>
+      <li>Every login, upload, question, block and feedback is in the audit trail</li>
+      <li>Every answer links to a trace ID with timings for each step</li>
+      <li>The model and prompt version are stored with every answer</li>
+      <li>Admins can export the audit trail and login history as CSV</li></ul></div>
+  </div>
+</section>
+
+<!-- ============ STACK ============ -->
+<section>
+  <h2>Technology choices</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>User interface</td><td><code>Streamlit</code></td><td>Python-only; login and role-based pages without a separate front-end team</td></tr>
+      <tr><td>API</td><td><code>FastAPI</code></td><td>Typed, fast, and Swagger docs come built in for testing and integration</td></tr>
+      <tr><td>PDF parsing</td><td><code>PyMuPDF</code></td><td>Reads font sizes and tables, which lets chunking follow the policy's section structure</td></tr>
+      <tr><td>Embeddings</td><td><code>BAAI/bge-base-en-v1.5</code> · 768-d</td><td>Strong open-source retrieval model that runs on a standard CPU</td></tr>
+      <tr><td>Keyword search</td><td><code>BM25 sparse vectors</code></td><td>Catches exact terms such as clause numbers and acronyms that meaning-based search can miss</td></tr>
+      <tr><td>Vector database</td><td><code>Qdrant</code></td><td>Hybrid search and per-policy filtering built in; runs in Docker or embedded</td></tr>
+      <tr><td>Reranker</td><td><code>BAAI/bge-reranker-v2-m3</code></td><td>Re-scores the top 20 results for precision; its score drives the "not in policy" gate</td></tr>
+      <tr><td>LLM</td><td><code>Ollama · llama3.1:8b</code> → <code>qwen2.5:3b</code></td><td>Runs locally with an automatic backup model; can be swapped through configuration</td></tr>
+      <tr><td>Guardrails</td><td><code>Custom rules + DeBERTa-v3</code></td><td>No paid service; every block is explained to the user and audited</td></tr>
+      <tr><td>Evaluation</td><td><code>DeepEval</code> + local judge <code>qwen2.5:7b</code></td><td>Industry-standard RAG metrics without sending data outside</td></tr>
+      <tr><td>App data</td><td><code>SQLite</code></td><td>Users, sessions, chats and audit in one file; swap to Postgres at scale</td></tr>
+      <tr><td>Observability</td><td><code>JSON logs · traces · Prometheus</code></td><td>Any answer can be traced back step by step</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============ QUALITY ============ -->
+<section>
+  <h2>How accuracy is measured</h2>
+  <p class="intro">A golden set of questions with known answers runs through the full pipeline. A local AI judge scores the results with DeepEval, and each report records the exact model, prompt version and settings, so scores can be compared across releases.</p>
+  <div class="metrics">
+    <div><h3>Finding the right text</h3><p>Contextual precision, recall and relevancy (DeepEval). Hit rate and MRR against expected keywords.</p></div>
+    <div><h3>Answering correctly</h3><p>Faithfulness, answer relevancy and hallucination (DeepEval). G-Eval correctness against the reference answer.</p></div>
+    <div><h3>Behaving as instructed</h3><p>Prompt alignment with the prompt's own rules, plus citation quality, tone, bias and toxicity. Refusal accuracy on questions the policies don't cover. Guardrail accuracy.</p></div>
+    <div><h3>In production</h3><p>The AI grades every live answer in the background on five criteria. Employee thumbs up/down and guardrail blocks show on the admin dashboard.</p></div>
+  </div>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section>
+  <h2>Path to enterprise scale</h2>
+  <p class="intro">Each of these can be swapped on its own, because the code keeps each component behind its own module.</p>
+  <ul class="roadmap">
+    <li><b>Single sign-on</b><span>Replace local passwords with Azure AD / Okta. The login-session and audit tables stay as they are.</span></li>
+    <li><b>Postgres</b><span>Move app data from SQLite with a one-line change to the database URL</span></li>
+    <li><b>GPU LLM serving</b><span>Move from Ollama to vLLM on a GPU node for more concurrent users</span></li>
+    <li><b>Qdrant cluster</b><span>Replicated vector storage once the number of policies and users grows</span></li>
+    <li><b>Evaluation in CI</b><span>Block releases when faithfulness or correctness fall below a threshold (<code>--fail-under</code> is already built in)</span></li>
+  </ul>
+</section>
+</div>

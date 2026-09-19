@@ -1,0 +1,33 @@
+# --- API ---
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+pydantic>=2.7
+pydantic-settings>=2.3
+SQLAlchemy>=2.0
+PyJWT>=2.8
+bcrypt>=4.1
+httpx>=0.27
+tenacity>=8.3
+PyYAML>=6.0
+prometheus-client>=0.20
+python-dotenv>=1.0          # UI reads API_BASE_URL from .env
+
+# --- Ingestion / retrieval ---
+pymupdf>=1.24
+qdrant-client>=1.12
+sentence-transformers>=3.0     # bge embeddings + bge reranker (pulls torch + transformers)
+snowballstemmer>=2.2
+sentencepiece>=0.2           # tokenizer for the DeBERTa prompt-injection model
+protobuf>=4.25
+
+# --- Evaluation ---
+deepeval>=2.0
+
+# --- UI ---
+streamlit>=1.38
+pandas>=2.0
+
+# --- Dev / demo ---
+pytest>=8.0
+reportlab>=4.0

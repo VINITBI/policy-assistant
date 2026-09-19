@@ -1,0 +1,17 @@
+# Infrastructure only (the Python app runs natively):  docker compose up -d
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: policy-qdrant
+    ports: ["6333:6333", "6334:6334"]
+    volumes: ["./data/qdrant_storage:/qdrant/storage"]
+    restart: unless-stopped
+
+  # Optional: if you prefer Ollama in Docker instead of the desktop install
+  ollama:
+    image: ollama/ollama:latest
+    container_name: policy-ollama
+    ports: ["11434:11434"]
+    volumes: ["./data/ollama:/root/.ollama"]
+    restart: unless-stopped
+    profiles: ["ollama"]
